@@ -8,7 +8,7 @@ describe('Bundle products test suite', () => {
         cy.visit(product.bundledProductUrl);
     });
     it('Can render the product name', () => {
-        cy.get(selectors.mainHeading)
+        cy.get('div.columns > div > div > section.text-gray-700.body-font > div > div > div > p > strong')
             .should('contain.text', product.bundledProductName)
             .should('be.visible');
     })
