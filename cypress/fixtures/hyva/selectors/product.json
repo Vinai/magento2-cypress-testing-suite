@@ -3,7 +3,7 @@
     "addToWishlistButton": "[aria-label=\"Add to Wish List\"]",
     "breadCrumbItems": ".breadcrumbs ol li",
     "cartIconProductCount": "span[x-text=\"cart.summary_count\"]",
-    "customerReviewTitle": ".product-info-main section h2",
+    "customerReviewTitle": ".product-info-main section h3",
     "errorMessage": ".message.error",
     "forgottenField": ".swatch-attribute :invalid",
     "mainHeading": "h1.title-font",
