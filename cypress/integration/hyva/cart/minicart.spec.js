@@ -5,6 +5,7 @@ describe('Mini cart tests', () => {
     beforeEach(() => {
         cy.visit(minicart.didiSportWatch)
         cy.get(selectors.addToCartButton).click()
+        cy.wait(250) // wait for alpine init
         cy.get(selectors.miniCartButton).click()
         cy.wait(250) // wait for slider to open
     })
