@@ -4,7 +4,7 @@ import selectors from "../../../fixtures/hyva/selectors/minicart"
 describe('Mini cart tests', () => {
     beforeEach(() => {
         cy.visit(minicart.didiSportWatch)
-        cy.wait(50) // wait for alpine init
+        cy.wait(250) // wait for alpine init
         cy.get(selectors.addToCartButton).click()
         cy.get(selectors.miniCartButton).click()
         cy.wait(250) // wait for slider to open
