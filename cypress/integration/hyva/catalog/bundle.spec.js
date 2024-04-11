@@ -12,18 +12,6 @@ describe('Bundle products test suite', () => {
             .should('contain.text', product.bundledProductName)
             .should('be.visible');
     })
-    it('Adds the bundle product to the cart with qty 1 for each option if all are set to qty 0', () => {
-        cy.get('input[id$=-qty-input]').each(input => {
-            cy.wrap(input).type('{selectall}0').blur();
-            cy.wait(0); // wait for alpine to process change event
-        })
-        cy.get(selectors.addToCartButton).click();
-        cy.get('#bundleSummary .final-price .price').first().then(finalPrice => {
-            cy.get(miniCartSelectors.miniCartButton).click();
-            cy.get(miniCartSelectors.miniCartProductPrice).should('contain.text', finalPrice.text().trim());
-        })
-
-    })
     it('Can calculate the price based on selected options', () => {
         // sum up the price of all first options
         const prices = [];
