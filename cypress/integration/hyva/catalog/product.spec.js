@@ -37,6 +37,7 @@ describe('Simple Product test suite', () => {
             `You added ${product.simpleProductName} to your shopping cart.`
         );
         cy.get(selectors.cartIconProductCount).invoke('text').should('not.eq', '') // wait for product count to update
+        cy.wait(1000);
         cy.get(selectors.cartIconProductCount)
             .invoke('text')
             .then(parseFloat)

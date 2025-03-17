@@ -63,6 +63,7 @@ describe('Bundle products test suite', () => {
             `You added ${product.bundledProductName} to your shopping cart.`
         );
         cy.get(selectors.cartIconProductCount).invoke('text').should('not.eq', '') // wait for product count to update
+        cy.wait(1000); // wait for alpine to process change event
         cy.get(selectors.cartIconProductCount).invoke('text').then(parseFloat).should('be.gte', 1);
     })
 })

@@ -8,7 +8,7 @@
     "deleteProductButton": ".cart [aria-label^=\"Remove \"]",
     "emptyCartTextField": ".cart-empty",
     "grandTotal": ".py-2 > .w-5\\/12",
-    "cartTotalLabels": "#cart-totals [x-html=\"segment.title\"]",
+    "cartTotalLabels": "#cart-totals [x-html=\"formatTotalLabel\"]",
     "messageToast": ".message",
     "product": {
         "addToCartButton": "#product-addtocart-button",

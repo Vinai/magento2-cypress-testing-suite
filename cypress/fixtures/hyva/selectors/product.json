@@ -2,7 +2,7 @@
     "addToCartButton": "#product-addtocart-button",
     "addToWishlistButton": "[aria-label=\"Add to Wish List\"]",
     "breadCrumbItems": ".breadcrumbs ol li",
-    "cartIconProductCount": "span[x-text=\"cart.summary_count\"]",
+    "cartIconProductCount": "span[x-text=\"summaryCount\"]",
     "customerReviewTitle": "#customer-review-list h2",
     "errorMessage": ".message.error",
     "forgottenField": ".swatch-attribute :invalid",
