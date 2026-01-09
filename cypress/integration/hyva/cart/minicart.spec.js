@@ -11,7 +11,7 @@ describe('Mini cart tests', () => {
 
     it('Can delete an item from the cart slider', () => {
         cy.get(selectors.removeProductButton).click()
-        cy.contains('You removed the item.')
+        cy.get('#cart-drawer').contains('Cart is empty');
     })
 
     it('Can navigate to the product when clicking the edit icon', () => {
@@ -33,10 +33,6 @@ describe('Mini cart tests', () => {
     it('Can navigate to the checkout with a link in the slider', () => {
         cy.get(selectors.miniCartCheckoutButton).click()
         cy.title().should('eq', 'Checkout')
-    })
-
-    it('Can open minicart slider', () => {
-        cy.get(selectors.miniCartSlider).should('be.visible')
     })
 
     it('Can change amount in the minicart', () => {

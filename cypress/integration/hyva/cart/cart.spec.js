@@ -80,7 +80,7 @@ describe("Cart tests", () => {
             cy.get(cart.pageTitle).should("contain.text", "Shopping Cart")
             cy.get(cart.productPrice).first().should("have.text", productPrice);
 
-            cy.get('#shipping-estimate-toggle').click();
+            cy.get('#block-shipping').click();
             //select country unlikely to have any tax rules
             cy.get('#shipping-zip-form select[name="country_id"]').select('Aruba')
             cy.get('#cart-totals svg.animate-spin').should('exist')

@@ -1,6 +1,5 @@
 import product from "../../../fixtures/hyva/product.json";
 import selectors from "../../../fixtures/hyva/selectors/product.json";
-import miniCartSelectors from "../../../fixtures/hyva/selectors/minicart.json";
 import homepageSelectors from "../../../fixtures/hyva/selectors/homepage.json";
 
 describe('Bundle products test suite', () => {
@@ -34,7 +33,7 @@ describe('Bundle products test suite', () => {
     })
     it('Can display selection quantities', () => {
         let expectedNames = [];
-        cy.get('.product-info-main fieldset > div > label').then(associatedProductNames => {
+        cy.get('#maincontent div.product-options-bottom fieldset > fieldset > legend').then(associatedProductNames => {
             expectedNames = associatedProductNames.map((idx, productName) => productName.innerText.trim());
         })
         // set associated product qty to 1, 2, 3...
@@ -62,6 +61,7 @@ describe('Bundle products test suite', () => {
         cy.get(homepageSelectors.successMessage).contains(
             `You added ${product.bundledProductName} to your shopping cart.`
         );
+        cy.wait(300);
         cy.get(selectors.cartIconProductCount).invoke('text').should('not.eq', '') // wait for product count to update
         cy.get(selectors.cartIconProductCount).invoke('text').then(parseFloat).should('be.gte', 1);
     })

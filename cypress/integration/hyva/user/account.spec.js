@@ -72,11 +72,6 @@ describe(['hot'], 'Account activities', () => {
         });
     });
 
-    it('Can use API to login', () => {
-        // @TODO As of yet quite useless
-        Magento2RestApi.logCustomerIn(account.customerLogin);
-    });
-
     it('Can check your profile', () => {
         cy.visit(account.routes.accountEdit);
         Account.checkAllProfileSpecs();

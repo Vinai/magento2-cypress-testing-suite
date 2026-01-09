@@ -36,6 +36,7 @@ describe('Simple Product test suite', () => {
         cy.get(homepageSelectors.successMessage).contains(
             `You added ${product.simpleProductName} to your shopping cart.`
         );
+        cy.wait(300);
         cy.get(selectors.cartIconProductCount).invoke('text').should('not.eq', '') // wait for product count to update
         cy.get(selectors.cartIconProductCount)
             .invoke('text')
