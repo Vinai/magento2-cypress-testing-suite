@@ -37,7 +37,7 @@
     "successMessageCartLink": ".message.success a",
     "wishlistItemCommentField": "[id^=\"product-item-comment\"]",
     "wishlistQtyField": ".form-input.qty",
-    "wishlistRemoveItemButton": "[title=\"Remove Item\"]",
+    "wishlistRemoveItemButton": "button[data-role=\"remove\"]",
     "wishlistShareBackLink": ".form.wishlist.share .back",
     "wishlistShareButton": "button.share",
     "wishlistUpdateButton": "#wishlist-view-form .update"

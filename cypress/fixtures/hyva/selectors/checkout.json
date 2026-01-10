@@ -59,7 +59,7 @@
     "postCodeField": "#shipping_address.zipcode",
     "postCodeLabel": "[for=\"shipping_address.zipcode\"]",
     "productPrice": ".final-price [id^=\"product-price\"]",
-    "productQuantityField": "input[id$=-qty]",
+    "productQuantityField": "input[name$=\"[qty]\"",
     "regionField": "#shipping_address.region",
     "regionLabel": "[for=\"shipping_address.region\"]",
     "saveAddressBtn": "#shipping_address div.flex.items-center > button.btn-primary",

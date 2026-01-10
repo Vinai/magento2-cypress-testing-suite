@@ -7,7 +7,7 @@
     "couponInputField": "#coupon_code",
     "deleteProductButton": ".cart [aria-label^=\"Remove \"]",
     "emptyCartTextField": ".cart-empty",
-    "grandTotal": ".py-2 > .w-5\\/12",
+    "grandTotal": "#cart-totals .text-xl.font-semibold .justify-self-end",
     "cartTotalLabels": "#cart-totals [x-text=\"segment.title\"]",
     "messageToast": ".message",
     "product": {
@@ -18,7 +18,7 @@
     "productRowInCart": "div.table-row-item",
     "productNameInCart": ".cart .item .product-item-name a",
     "productPrice": "#shopping-cart-table li .price-box .cart-price .price",
-    "productSubtotal": "#cart-totals > div:nth-child(3) > div > div.justify-self-end",
+    "productSubtotal": "#shopping-cart-table .font-medium .cart-price .price",
     "qtyInputField": "input[data-role=\"cart-item-qty\"]",
     "successMessages": "#messages .message.success",
     "url": {
