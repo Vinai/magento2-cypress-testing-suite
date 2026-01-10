@@ -1,5 +1,14 @@
 {
     "addToCartButton": "#product-addtocart-button",
+    "bundle": {
+        "optionControls": ".product-info-main fieldset .control",
+        "optionPrice": ".price-wrapper",
+        "qtyInputs": "input[id$=-qty-input]",
+        "summaryFinalPrice": "#bundleSummary .final-price .price",
+        "summaryItemNames": "#bundleSummary .bundle.items li > span",
+        "summaryItemQty": "#bundleSummary .bundle.items li > div > span:first-child",
+        "optionLegends": "#maincontent div.product-options-bottom fieldset > fieldset > legend"
+    },
     "addToWishlistButton": "[aria-label=\"Add to Wish List\"]",
     "breadCrumbItems": ".breadcrumbs ol li",
     "cartIconProductCount": "#menu-cart-icon > span[x-text=\"summaryCount\"]",

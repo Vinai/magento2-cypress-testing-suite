@@ -67,62 +67,72 @@ describe("Cart tests", () => {
     });
 
     it("Displays the correct product prices and totals", () => {
+        /**
+         * Parses a price string like "$92.00" and returns the numeric value (92).
+         */
+        const parsePrice = (priceString) => {
+            return parseInt(priceString.replace(/[^0-9.]/g, ''), 10);
+        };
+
+        /**
+         * Waits for the cart totals to finish updating (spinner disappears).
+         */
+        const waitForCartUpdate = () => {
+            cy.get('#cart-totals svg.animate-spin').should('exist');
+            cy.get('#cart-totals svg.animate-spin').should('not.exist');
+        };
+
+        // Step 1: Get product 1's unit price from the PDP
         cy.visit(cart.url.product1Url);
+        cy.get(cart.product.productPrice)
+            .first()
+            .invoke('text')
+            .then(text => text.trim())
+            .as('product1UnitPrice');
 
+        // Step 2: Add product 2 to cart (product 1 was already added in beforeEach)
+        Cart.addProductToCart(cart.url.product2Url);
+        cy.get(cart.product.messageToast).should("include.text", "to your shopping cart");
 
-        //check if product price matches with price in cart
-        cy.get(cart.product.productPrice).then(($productPrice) => {
-            const productPrice = $productPrice[0].textContent.trim();
-
-            Cart.addProductToCart(cart.url.product2Url);
-            cy.get(cart.product.messageToast).should("include.text", "to your shopping cart")
-            cy.visit(cart.url.cartUrl);
-            cy.get(cart.pageTitle).should("contain.text", "Shopping Cart")
-            cy.get(cart.productPrice).first().should("have.text", productPrice);
-
-            cy.get('#block-shipping').click();
-            //select country unlikely to have any tax rules
-            cy.get('#shipping-zip-form select[name="country_id"]').select('Aruba')
-            cy.get('#cart-totals svg.animate-spin').should('exist')
-            cy.get('#cart-totals svg.animate-spin').should('not.exist')
-            cy.wait(100)
-
-            //change the qty value
-            cy.get(cart.qtyInputField)
-                .eq(0)
-                .type("{backspace}2{enter}")
-                .then(($qty) => {
-                    const qty = parseInt($qty.val());
-                    cy.wait(3000); // wait for page to reload with new prices
-
-                    //check if qty * product subtotal displays the correct amount
-                    cy.get(cart.productSubtotal).first().then(($subTotal) => {
-                        const subTotal = parseInt(
-                            $subTotal[0].textContent.trim().slice(1)
-                        );
-                        expect(parseInt(productPrice.slice(1)) * qty).to.equal(
-                            subTotal
-                        );
-                    });
-                });
+        // Step 3: Go to cart and verify product 1's price is displayed correctly
+        cy.visit(cart.url.cartUrl);
+        cy.get(cart.pageTitle).should("contain.text", "Shopping Cart");
+        cy.get('@product1UnitPrice').then((expectedPrice) => {
+            cy.get(cart.productPrice).first().should("have.text", expectedPrice);
         });
 
-        //check if the grand total is correct
-        cy.get(cart.productSubtotal).eq(0).then(($total1) => {
-            const subTotal1 = parseInt($total1[0].textContent.trim().slice(1));
+        // Step 4: Select a country without tax rules to simplify price calculations
+        cy.get('#block-shipping').click();
+        cy.get('#shipping-zip-form select[name="country_id"]').select('Aruba');
+        waitForCartUpdate();
 
-            cy.get(cart.productSubtotal).eq(1).then(($total2) => {
-                const subTotal2 = parseInt(
-                    $total2[0].textContent.trim().slice(1)
-                );
+        // Step 5: Change product 1 quantity to 2 and verify line subtotal
+        const newQuantity = 2;
+        cy.get(cart.qtyInputField).first().clear();
+        cy.get(cart.qtyInputField).first().type(`${newQuantity}{enter}`);
+        waitForCartUpdate();
 
-                cy.get(cart.grandTotal).then(($grandTotal) => {
-                    const grandTotal = parseInt(
-                        $grandTotal[0].textContent.trim().slice(1)
-                    );
-                    expect(grandTotal).to.equal(subTotal1 + subTotal2);
-                });
-            });
+        cy.get('@product1UnitPrice').then((unitPriceText) => {
+            const unitPrice = parsePrice(unitPriceText);
+            const expectedSubtotal = unitPrice * newQuantity;
+
+            cy.get(cart.productSubtotal)
+                .first()
+                .invoke('text')
+                .then(parsePrice)
+                .should('equal', expectedSubtotal);
+        });
+
+        // Step 6: Verify grand total equals sum of all product subtotals
+        cy.get(cart.productSubtotal).then(($subtotals) => {
+            const subtotalSum = Array.from($subtotals)
+                .map(el => parsePrice(el.textContent))
+                .reduce((sum, val) => sum + val, 0);
+
+            cy.get(cart.grandTotal)
+                .invoke('text')
+                .then(parsePrice)
+                .should('equal', subtotalSum);
         });
     });
 });
