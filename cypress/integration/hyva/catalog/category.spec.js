@@ -6,80 +6,86 @@ describe("Category page tests", () => {
         cy.visit(product.categoryUrl);
     });
 
-    it("Can visit the category page and filters on color red", () => {
+    it("Can filter products by color", () => {
+        // Open color filter and select red
         cy.get(selectors.shopByColorFilter).contains('Color').click();
         cy.get(selectors.selectColorRed).click();
-        cy.get(selectors.activeFilterLabel).should("contain.text", "Color")
-        cy.get(selectors.activeFilterValue).should("contain.text", "Red")
+
+        // Verify active filter shows Color: Red
+        cy.get(selectors.activeFilterLabel).should("contain.text", "Color");
+        cy.get(selectors.activeFilterValue).should("contain.text", "Red");
     });
 
-    it("Can sort products on price from lowest to highest", () => {
+    it("Can sort products by price from lowest to highest", () => {
+        // Select "Price" sort option
         cy.get(selectors.sortBySelect).first().select(product.selectByPrice);
-        cy.get(selectors.productPriceDataAtt)
-            .eq(0)
-            .invoke("data", "price-amount")
-            .then((firstPrice) => {
-                cy.get(selectors.productPriceDataAtt)
-                    .eq(1)
-                    .invoke("data", "price-amount")
-                    .then((secondPrice) => {
-                        expect(firstPrice).to.be.lessThan(secondPrice);
-                    });
-            });
+
+        // Capture prices of first two products
+        cy.get(selectors.productPriceDataAtt).eq(0).invoke("data", "price-amount").as("firstPrice");
+        cy.get(selectors.productPriceDataAtt).eq(1).invoke("data", "price-amount").as("secondPrice");
+
+        // Verify first product is cheaper than second
+        cy.get("@firstPrice").then((firstPrice) => {
+            cy.get("@secondPrice").should("be.greaterThan", firstPrice);
+        });
     });
 
-    it("Can change the number of products to be displayed", () => {
-        cy.get(selectors.highestNumberOfProductsShowOption)
-            .invoke("val")
-            .then((numberOfProducts) => {
-                cy.get(selectors.numberOfProductsSelect).first().select(
-                    numberOfProducts
-                );
-                cy.get(selectors.numberOfShownItems)
-                    .first()
-                    .should("have.text", numberOfProducts);
-                cy.get(selectors.categoryProductContainer)
-                    .children()
-                    .should("to.have.length.of.at.most", +numberOfProducts);
-            });
+    it("Can change the number of products displayed", () => {
+        // Get the highest available option value for products per page
+        cy.get(selectors.highestNumberOfProductsShowOption).invoke("val").as("maxProducts");
+
+        cy.get("@maxProducts").then((maxProducts) => {
+            // Select the maximum products per page option
+            cy.get(selectors.numberOfProductsSelect).first().select(maxProducts);
+
+            // Verify toolbar shows the selected count
+            cy.get(selectors.numberOfShownItems).first().should("have.text", maxProducts);
+
+            // Verify product count doesn't exceed the selected limit
+            cy.get(selectors.categoryProductContainer)
+                .children()
+                .should("have.length.at.most", parseInt(maxProducts, 10));
+        });
     });
 
     it("Can see the correct breadcrumbs", () => {
-        cy.get(selectors.breadcrumbsItem)
-            .first()
-            .should("contain.text", "Home");
-        cy.get(selectors.breadcrumbsItem)
-            .eq(1)
-            .should("contain.text", `${product.category}`);
-        cy.get(selectors.breadcrumbsItem)
-            .eq(2)
-            .should("contain.text", `${product.subCategory}`);
+        cy.get(selectors.breadcrumbsItem).eq(0).should("contain.text", "Home");
+        cy.get(selectors.breadcrumbsItem).eq(1).should("contain.text", product.category);
+        cy.get(selectors.breadcrumbsItem).eq(2).should("contain.text", product.subCategory);
     });
 
     it("Can switch between grid and list view", () => {
+        // Verify grid view is shown by default
         cy.get(selectors.categoryProductGridWrapper).should("be.visible");
+
+        // Switch to list view and verify
         cy.get(selectors.listModeButton).first().click();
         cy.get(selectors.categoryProductListWrapper).should("be.visible");
     });
 
-    it("Can move to the next page using the pages navigation", () => {
-        cy.get(".column > section").then(($mainColumn) => {
-            if ($mainColumn[0].querySelector(selectors.pageNavigation)) {
-                cy.get(selectors.pageNavigation)
-                    .first()
-                    .should("to.have.length.of.at.most", 6);
-                cy.get(selectors.pageLink).first().contains("2").click();
-                // Check that we are on the second page, either of these assertions would be fine?
-                cy.url().then((url) => {
-                    expect(url.includes("p=2")).to.be.true;
-                });
-                cy.get(selectors.secondPageItem)
-                    .first()
-                    .should("include.text", "2")
-                    .should("not.have.attr", "href");
-            } else {
-                cy.get(selectors.pageNavigation).should("not.exist");
+    it("Can navigate to the next page using pagination", () => {
+        // Check if pagination exists on this category
+        cy.get("body").then(($body) => {
+            if ($body.find(selectors.pageNavigation).length === 0) {
+                // No pagination - skip test gracefully
+                cy.log("No pagination available on this category page");
+                return;
             }
+
+            // Verify pagination has reasonable number of items
+            cy.get(selectors.pageNavigation).should("have.length.at.most", 6);
+
+            // Click on page 2
+            cy.get(selectors.pageLink).contains("2").click();
+
+            // Verify URL contains page parameter
+            cy.url().should("include", "p=2");
+
+            // Verify page 2 is now the active (non-linked) page
+            cy.get(selectors.secondPageItem)
+                .first()
+                .should("include.text", "2")
+                .should("not.have.attr", "href");
         });
     });
 });

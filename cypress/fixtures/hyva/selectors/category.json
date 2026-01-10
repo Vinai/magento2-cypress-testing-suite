@@ -1,5 +1,6 @@
 {
     "breadcrumbsItem": "nav[aria-label=\"Breadcrumb\"] ol li",
+    "categoryMainColumn": ".column > section",
     "categoryProductContainer": ".products-grid > *",
     "categoryProductGridWrapper": ".mode-grid.products-grid",
     "categoryProductListWrapper": ".mode-list.products-list",
