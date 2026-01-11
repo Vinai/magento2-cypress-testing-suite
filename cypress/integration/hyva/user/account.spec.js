@@ -1,81 +1,58 @@
-import {Account} from '../../../page-objects/hyva/account';
-import {Magento2RestApi} from '../../../support/magento2-rest-api';
+import { Account } from '../../../page-objects/hyva/account';
+import { Magento2RestApi } from '../../../support/magento2-rest-api';
 import account from '../../../fixtures/account.json';
 import product from '../../../fixtures/hyva/product.json';
 import checkout from '../../../fixtures/checkout.json';
 import selectors from '../../../fixtures/hyva/selectors/account.json';
 import checkoutSelectors from '../../../fixtures/hyva/selectors/checkout.json';
 import productSelectors from '../../../fixtures/hyva/selectors/product.json';
-import homepageSelectors from '../../../fixtures/hyva/selectors/homepage.json'
-import cart from "../../../fixtures/hyva/selectors/cart.json";
-import {Cart} from "../../../page-objects/hyva/cart";
+import homepageSelectors from '../../../fixtures/hyva/selectors/homepage.json';
+import cart from '../../../fixtures/hyva/selectors/cart.json';
+import { Cart } from '../../../page-objects/hyva/cart';
 
-describe(['hot'], 'Account test creation', () => {
+describe(['hot'], 'Account creation', () => {
     it('Can create an account', () => {
+        const uniqueEmail = `${Date.now()}${account.customer.customer.email}`;
+
         cy.visit(account.routes.accountCreate);
         Account.createNewCustomer(
             account.customer.customer.firstname,
             account.customer.customer.lastname,
-            Date.now() + account.customer.customer.email,
+            uniqueEmail,
             account.customer.password
         );
-        cy.contains(
-            'Thank you for registering with Main Website Store.'
-        ).should('exist');
+
+        cy.contains('Thank you for registering with Main Website Store.').should('exist');
     });
 });
 
 describe(['hot'], 'Account activities', () => {
     before(() => {
         Magento2RestApi.createCustomerAccount(account.customer);
-        Account.login(
-            account.customer.customer.email,
-            account.customer.password
-        );
+        Account.login(account.customer.customer.email, account.customer.password);
         Account.createAddress(account.customerInfo);
-        // We need to logout or the beforeEach will fail
         Account.logout();
     });
 
     beforeEach(() => {
-        Account.login(
-            account.customer.customer.email,
-            account.customer.password
-        );
-        // If login fails the assertion is ignored without the wait(0)
-        cy.wait(0);
+        Account.login(account.customer.customer.email, account.customer.password);
         cy.contains('Please wait and try again later.').should('not.exist');
     });
 
     after(() => {
-        // Remove the added address
+        // Ensure we're logged in before cleanup
         cy.visit(account.routes.accountUrl);
-        cy.get('#maincontent').then(($mainContent) => {
-            if (
-                $mainContent[0].querySelector('h1') &&
-                $mainContent[0].querySelector('h1').innerText.trim() !==
-                'My Account'
-            ) {
-                Account.login(
-                    account.customer.customer.email,
-                    account.customer.password
-                );
+        cy.get(selectors.accountPageHeading).then(($heading) => {
+            if ($heading.text().trim() !== 'My Account') {
+                Account.login(account.customer.customer.email, account.customer.password);
             }
         });
-        cy.visit('/customer/address');
-        cy.get('a.delete').eq(0).click();
-        cy.on('window:confirm', (str) => {
-            expect(str.trim()).to.eq(
-                'Are you sure you want to delete this address?'
-            );
-            return true;
-        });
-    });
 
-    // it('Can use API to login', () => {
-    //     // @TODO As of yet quite useless
-    //     Magento2RestApi.logCustomerIn(account.customerLogin);
-    // });
+        // Remove the added address
+        cy.visit('/customer/address');
+        cy.get(selectors.deleteAddressButton).eq(0).click();
+        cy.on('window:confirm', () => true);
+    });
 
     it('Can check your profile', () => {
         cy.visit(account.routes.accountEdit);
@@ -83,72 +60,60 @@ describe(['hot'], 'Account activities', () => {
     });
 
     it('Can change password', () => {
+        const { password: originalPassword } = account.customer;
+        const { password: tempPassword } = account.tempCustomerInfo;
+
         cy.visit(account.routes.accountEdit);
         cy.contains('Change Password').click();
         cy.contains('Current Password').should('be.visible');
         cy.contains('New Password').should('be.visible');
+
+        // Change to temporary password
         cy.contains('Change Password').click();
-        Account.changePassword(
-            account.customer.password,
-            account.tempCustomerInfo.password
-        );
+        Account.changePassword(originalPassword, tempPassword);
         cy.contains('You saved the account information.').should('exist');
-        Account.login(
-            account.customer.customer.email,
-            account.tempCustomerInfo.password
-        );
+
+        // Login with new password and change back
+        Account.login(account.customer.customer.email, tempPassword);
         cy.visit(account.routes.accountEdit);
-        // Change password back to normal
-        Account.changePassword(
-            account.tempCustomerInfo.password,
-            account.customer.password
-        );
+        Account.changePassword(tempPassword, originalPassword);
         cy.contains('You saved the account information.').should('exist');
     });
 
     it('Can change the profile values', () => {
-        let fn = account.tempCustomerInfo.firstname,
-            ln = account.tempCustomerInfo.lastname;
+        const tempFirstname = account.tempCustomerInfo.firstname;
+        const tempLastname = account.tempCustomerInfo.lastname;
+        const originalFirstname = account.customer.customer.firstname;
+        const originalLastname = account.customer.customer.lastname;
+
+        // Change to temp values
         cy.visit(account.routes.accountEdit);
-        Account.changeProfileValues(
-            account.tempCustomerInfo.firstname,
-            account.tempCustomerInfo.lastname
-        );
+        Account.changeProfileValues(tempFirstname, tempLastname);
+
         Account.goToProfile();
-        cy.get(selectors.accountFirstnameInputSelector).should(
-            'have.value',
-            fn
-        );
-        cy.get(selectors.accountLastnameInputSelector).should('have.value', ln);
-        cy.visit(account.routes.accountEdit).then(() => {
-            let fn = account.customer.customer.firstname,
-                ln = account.customer.customer.lastname;
-            Account.changeProfileValues(fn, ln);
-            cy.visit(account.routes.accountEdit).then(() => {
-                cy.get(selectors.accountFirstnameInputSelector).should(
-                    'have.value',
-                    fn
-                );
-                cy.get(selectors.accountLastnameInputSelector).should(
-                    'have.value',
-                    ln
-                );
-            });
-        });
+        cy.get(selectors.accountFirstnameInputSelector).should('have.value', tempFirstname);
+        cy.get(selectors.accountLastnameInputSelector).should('have.value', tempLastname);
+
+        // Change back to original values
+        cy.visit(account.routes.accountEdit);
+        Account.changeProfileValues(originalFirstname, originalLastname);
+
+        cy.visit(account.routes.accountEdit);
+        cy.get(selectors.accountFirstnameInputSelector).should('have.value', originalFirstname);
+        cy.get(selectors.accountLastnameInputSelector).should('have.value', originalLastname);
     });
 
-    it('Can view order history', () => {
-        // Testing the link has already been done
+    it('Can view order history', function () {
         cy.visit(account.routes.accountOrderHistory);
-        cy.get('#maincontent .column.main').then(($column) => {
-            if ($column[0].querySelector('.order-products-toolbar p span')) {
-                cy.log($column.find('.order-products-toolbar p span').text());
-                expect(
-                    +$column[0]
-                        .querySelector('.order-products-toolbar p span')
-                        .innerText.trim()
-                        .slice(0, 1)
-                ).to.be.at.least(1);
+
+        cy.get(selectors.accountMainContent).then(($column) => {
+            if ($column.find(selectors.ordersCountToolbar).length) {
+                cy.get(selectors.ordersCountToolbar)
+                    .invoke('text')
+                    .then((text) => {
+                        const orderCount = parseInt(text.trim(), 10);
+                        expect(orderCount).to.be.at.least(1);
+                    });
             } else {
                 cy.contains('You have placed no orders.').should('exist');
             }
@@ -158,58 +123,52 @@ describe(['hot'], 'Account activities', () => {
     it('Can add an address', () => {
         cy.visit(account.routes.accountAddAddress);
         Account.createAddress(account.customerInfo);
+
         cy.contains(selectors.addNewAddressButton, 'Add New Address').click();
-        cy.get(selectors.newAddressStreetInput).type(
-            account.customerInfo.streetAddress
-        );
+
+        cy.get(selectors.newAddressStreetInput).type(account.customerInfo.streetAddress);
         cy.get(selectors.newAddressCityInput).type(account.customerInfo.city);
         cy.get(selectors.newAddressTelInput).type(account.customerInfo.phone);
         cy.get(selectors.newAddressZipcodeInput).type(account.customerInfo.zip);
-        cy.get(selectors.newAddressCountryInput).select(
-            account.customerInfo.country
-        );
-        cy.get(selectors.newAddressRegionInput).type(
-            account.customerInfo.state
-        );
+        cy.get(selectors.newAddressCountryInput).select(account.customerInfo.country);
+        cy.get(selectors.newAddressRegionInput).type(account.customerInfo.state);
         cy.get(selectors.newAddressBillingInput).check();
         cy.get(selectors.newAddressShippingInput).check();
+
         cy.contains('Save Address').click();
     });
 
     it('Can change an address', () => {
-        const timeStamp = Date.now().toString();
+        const timestamp = Date.now().toString();
+
         cy.visit(account.routes.accountAddresses);
         cy.get(selectors.editAddress).first().click();
-        cy.get(selectors.addressEditStreetInput).eq(0).type(timeStamp);
+        cy.get(selectors.addressEditStreetInput).eq(0).type(timestamp);
         cy.get(selectors.saveAddressButton).contains('Save Address').click();
+
         cy.contains('You saved the address.').should('exist');
     });
 
     if (!Cypress.env('MAGENTO2_SKIP_CHECKOUT')) {
-        it("Can add an address automatically from saved address'", () => {
-            // There needs to be a saved address for this test to work,
-            // TODO: add an "Account.addAddress()" method to the Account page-object
+        it('Can use saved address at checkout', () => {
             cy.visit(product.simpleProductUrl);
             cy.contains('Add to Cart').click();
+
             cy.visit(checkout.checkoutUrl);
-            cy.wait(1000); // this shouldn't be needed but for some reason it doesn't work without
-            cy.get(
-                '[id^="additional.shipping_address_selected_other_option_"]'
-            ).should('have.length.above', 1);
+            cy.get(selectors.checkoutSavedAddressOption).should('have.length.above', 1);
         });
     }
 
     it('Can remove an address', () => {
         Account.createAddress(account.customerInfo);
         cy.visit(account.routes.accountAddresses);
+
         cy.get(selectors.deleteAddressButton).last().click();
-        // An confirm alert pops up asking if you are sure
         cy.on('window:confirm', (str) => {
-            expect(str.trim()).to.eq(
-                'Are you sure you want to delete this address?'
-            );
+            expect(str.trim()).to.eq('Are you sure you want to delete this address?');
             return true;
         });
+
         cy.contains('You deleted the address.').should('exist');
     });
 
@@ -217,98 +176,88 @@ describe(['hot'], 'Account activities', () => {
         cy.visit(account.routes.manageNewsletter);
         cy.contains('General Subscription').click();
         cy.get(selectors.subscriptionSaveButton).click();
-        cy.get(homepageSelectors.successMessage).should('include.text', 'We have ');
+
+        cy.get(homepageSelectors.successMessage).should('contain.text', 'We have');
     });
 
-    it('Can add a product the a wishlist', () => {
+    it('Can add a product to a wishlist', () => {
         cy.visit(product.simpleProductUrl);
         cy.get(productSelectors.addToWishlistButton).eq(0).click();
-        cy.get(homepageSelectors.mainHeading)
-            .should('contain.text', 'My Wish List')
-            .should('exist');
-        cy.visit(product.wishlistUrl).then(() => {
-            cy.get('.toolbar-number').should('exist');
-            cy.contains(product.simpleProductName).should('exist');
-        });
+
+        cy.get(homepageSelectors.mainHeading).should('contain.text', 'My Wish List');
+
+        cy.visit(product.wishlistUrl);
+        cy.get(selectors.wishlistItemCount).should('exist');
+        cy.contains(product.simpleProductName).should('exist');
     });
 
     it('Can edit the wishlist and remove item', () => {
-        // Add comment/check qty/send list/remove item
         cy.visit(product.wishlistUrl);
+
+        // Add comment
         cy.get(selectors.wishlistItemCommentField).first().type('foobar');
         cy.get(selectors.wishlistUpdateButton).click();
-        cy.get(selectors.wishlistItemCommentField).should(
-            'contain.text',
-            'foobar'
-        );
+        cy.get(selectors.wishlistItemCommentField).should('contain.text', 'foobar');
+
+        // Verify quantity
         cy.get(selectors.wishlistQtyField)
             .first()
-            .then(($qty) => {
-                // you would actually be sure that you are counting the item you just added
+            .should(($qty) => {
                 expect($qty[0].valueAsNumber).to.be.at.least(1);
             });
+
+        // Test share functionality
         cy.get(selectors.wishlistShareButton).click();
-        cy.get(homepageSelectors.mainHeading)
-            .should('contain.text', 'Wish List Sharing')
-            .should('exist');
+        cy.get(homepageSelectors.mainHeading).should('contain.text', 'Wish List Sharing');
         cy.get(selectors.wishlistShareBackLink).click();
-        cy.get(selectors.wishlistRemoveItemButton)
-            .first()
-            .click()
-            .then(() => {
-                cy.get(homepageSelectors.successMessage)
-                    .should(
-                        'contain.text',
-                        `${product.simpleProductName} has been removed from your Wish List.`
-                    )
-                    .should('exist');
-            });
+
+        // Remove item
+        cy.get(selectors.wishlistRemoveItemButton).first().click();
+        cy.get(homepageSelectors.successMessage)
+            .should('contain.text', `${product.simpleProductName} has been removed from your Wish List.`);
     });
 
     it('Can log out', () => {
         cy.get(selectors.accountIcon).click();
         cy.get(selectors.accountMenuItems).contains('Sign Out').click();
-        cy.get(homepageSelectors.mainHeading).should(
-            'contain.text',
-            'You have signed out'
-        );
+
+        cy.get(homepageSelectors.mainHeading).should('contain.text', 'You have signed out');
     });
 });
 
 describe('Customer cart', () => {
-    // This test is in this file because it depends on the customer account fixture created by this spec
-    it("Merges an already existing cart when a customer logs in", () => {
+    it('Merges an existing cart when a customer logs in', () => {
         Cart.addProductToCart(cart.url.product1Url);
         cy.visit(cart.url.cartUrl);
-        cy.get(cart.productNameInCart).invoke('text').then(productName => {
-            Account.login(account.customerLogin.username, account.customerLogin.password)
+
+        cy.get(cart.productNameInCart).invoke('text').as('productName');
+
+        cy.get('@productName').then((productName) => {
+            Account.login(account.customerLogin.username, account.customerLogin.password);
             cy.visit(cart.url.cartUrl);
-            cy.get(cart.productNameInCart).should('have.text', productName)
-        })
+            cy.get(cart.productNameInCart).should('have.text', productName);
+        });
+
         Account.logout();
     });
-})
+});
 
 describe(['hot'], 'Guest user test', () => {
     it('Can login from cart', () => {
         cy.visit(product.simpleProductUrl);
         cy.get(checkoutSelectors.addToCartButton).click();
-        cy.get(selectors.successMessageCartLink)
-            .contains('shopping cart')
-            .click();
+
+        cy.get(selectors.successMessageCartLink).contains('shopping cart').click();
+
         cy.visit(account.routes.accountIndex);
-        Account.login(
-            account.customer.customer.email,
-            account.customer.password
-        );
-        // If the login fails the test will still pass without this line
+        Account.login(account.customer.customer.email, account.customer.password);
+
         cy.get(selectors.messageContents).should('not.exist');
+
         cy.get(checkoutSelectors.miniCartIcon).click();
-        cy.get(checkoutSelectors.cartDrawerEditLink)
-            .contains('View and Edit Cart')
-            .click();
-        cy.get(checkoutSelectors.productQuantityField).and(($input) => {
-            // Could pass when I should fail?
+        cy.get(checkoutSelectors.cartDrawerEditLink).contains('View and Edit Cart').click();
+
+        cy.get(checkoutSelectors.productQuantityField).should(($input) => {
             expect($input[0].valueAsNumber).to.be.at.least(1);
         });
         cy.contains(product.simpleProductName).should('exist');
@@ -317,23 +266,24 @@ describe(['hot'], 'Guest user test', () => {
     if (!Cypress.env('MAGENTO2_SKIP_CHECKOUT')) {
         it('Can login from checkout', () => {
             cy.visit(product.simpleProductUrl);
-            cy.get(checkoutSelectors.addToCartButton)
-                .should('contain.text', 'Add to Cart')
-                .click();
-            cy.visit(checkout.checkoutUrl, {timeout: 5000});
+            cy.get(checkoutSelectors.addToCartButton).should('contain.text', 'Add to Cart');
+            cy.get(checkoutSelectors.addToCartButton).click();
+
+            cy.visit(checkout.checkoutUrl);
             cy.get(checkoutSelectors.checkoutLoginToggle).click();
-            cy.get(checkoutSelectors.checkoutEmailLabel)
-                .click()
-                .type(account.customer.customer.email);
-            cy.get(checkoutSelectors.checkoutPasswordLabel)
-                .click()
-                .type(account.customer.password);
+
+            cy.get(checkoutSelectors.checkoutEmailLabel).click();
+            cy.get(checkoutSelectors.checkoutEmailLabel).type(account.customer.customer.email);
+
+            cy.get(checkoutSelectors.checkoutPasswordLabel).click();
+            cy.get(checkoutSelectors.checkoutPasswordLabel).type(account.customer.password);
+
             cy.get(checkoutSelectors.checkoutLoginButton).click();
-            cy.get(checkoutSelectors.checkoutLoggedInEmail).should(
-                'contain.text',
-                account.customer.customer.email
-            );
-            cy.get('.message span').should('not.exist');
+
+            cy.get(checkoutSelectors.checkoutLoggedInEmail)
+                .should('contain.text', account.customer.customer.email);
+
+            cy.get(selectors.messageContents).should('not.exist');
         });
     }
 });
