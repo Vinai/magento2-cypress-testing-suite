@@ -1,68 +1,105 @@
 import product from "../../../fixtures/hyva/product.json";
 import selectors from "../../../fixtures/hyva/selectors/product.json";
-import miniCartSelectors from "../../../fixtures/hyva/selectors/minicart.json";
 import homepageSelectors from "../../../fixtures/hyva/selectors/homepage.json";
+
+/**
+ * Extracts numeric price from a price string (e.g., "$12.34" -> 12.34)
+ */
+function parsePrice(priceText) {
+    const match = priceText.match(/[\d.]+/)
+    return match ? parseFloat(match[0]) : 0
+}
+
+/**
+ * Sets the quantity for all bundle option inputs and waits for Alpine to update the summary.
+ * @param {number|function} qtyOrFn - Either a fixed quantity or a function(index) returning quantity
+ */
+function setBundleOptionQuantities(qtyOrFn) {
+    const getQty = typeof qtyOrFn === 'function' ? qtyOrFn : () => qtyOrFn
+
+    cy.get(selectors.bundleOptionQtyInputs).each(($input, idx) => {
+        const qty = String(getQty(idx))
+        cy.wrap($input).as('currentInput')
+        cy.get('@currentInput').clear()
+        cy.get('@currentInput').type(qty)
+        cy.get('@currentInput').blur()
+    })
+
+    // Wait for Alpine to process changes by checking the summary has updated
+    cy.get(selectors.bundleSummaryFinalPrice).should('be.visible')
+}
 
 describe('Bundle products test suite', () => {
     beforeEach(() => {
         cy.visit(product.bundledProductUrl);
     });
+
     it('Can render the product name', () => {
         cy.get(selectors.mainHeading)
-            .should('contain.text', product.bundledProductName)
-            .should('be.visible');
+            .should('be.visible')
+            .and('contain.text', product.bundledProductName)
     })
-    it('Can calculate the price based on selected options', () => {
-        // sum up the price of all first options
-        const prices = [];
-        cy.get('.product-info-main fieldset .control').then(associatedProductOptions => {
-            associatedProductOptions.map((idx, product) => {
-                const firstOptionPrice = product.querySelector('.price-wrapper');
-                const m = firstOptionPrice.innerText.trim().match(/(?<price>[\d.]+)/)
-                m && prices.push(parseFloat(m.groups.price))
 
+    it('Can calculate the price based on selected options', () => {
+        // Collect prices from all first options
+        cy.get(selectors.bundleOptionControls).then(($options) => {
+            const prices = []
+
+            $options.each((idx, option) => {
+                const priceWrapper = option.querySelector(selectors.bundleOptionPriceWrapper)
+                if (priceWrapper) {
+                    prices.push(parsePrice(priceWrapper.innerText))
+                }
+            })
+
+            // Store expected total for later assertion
+            cy.wrap(prices.reduce((sum, n) => sum + n, 0)).as('expectedTotal')
+        })
+
+        setBundleOptionQuantities(1)
+
+        cy.get('@expectedTotal').then((expectedTotal) => {
+            cy.get(selectors.bundleSummaryFinalPrice)
+                .first()
+                .should('contain.text', `$${expectedTotal}`)
+        })
+    })
+
+    it('Can display selection quantities', () => {
+        // Collect expected product names from labels
+        cy.get(selectors.bundleOptionLabels).then(($labels) => {
+            const names = [...$labels].map(label => label.innerText.trim())
+            cy.wrap(names).as('expectedNames')
+        })
+
+        // Set quantities to 1, 2, 3, etc.
+        setBundleOptionQuantities((idx) => idx + 1)
+
+        // Verify product names appear in correct order
+        cy.get('@expectedNames').then((expectedNames) => {
+            cy.get(selectors.bundleSummaryItemNames).each(($name, idx) => {
+                expect($name.text()).to.eq(expectedNames[idx])
             })
         })
-        // set qty for each associated product to 1
-        cy.get('input[id$=-qty-input]').each(input => {
-            cy.wrap(input).type('{selectall}1').blur();
-            cy.wait(0); // wait for alpine to process change event
-        })
-        cy.get('#bundleSummary .final-price .price').first().then(finalPrice => {
-            cy.wrap(finalPrice).should('contain.text', `$${(prices.reduce((sum, n) => sum + n, 0))}`)
+
+        // Verify quantities are 1, 2, 3, etc.
+        cy.get(selectors.bundleSummaryItemQtys).each(($qty, idx) => {
+            expect($qty.text()).to.eq(String(idx + 1))
         })
     })
-    it('Can display selection quantities', () => {
-        let expectedNames = [];
-        cy.get('.product-info-main fieldset > div > label').then(associatedProductNames => {
-            expectedNames = associatedProductNames.map((idx, productName) => productName.innerText.trim());
-        })
-        // set associated product qty to 1, 2, 3...
-        cy.get('input[id$=-qty-input]').each((input, idx) => {
-            cy.wrap(input).type(`{selectall}${idx + 1}`).blur();
-            cy.wait(0); // wait for alpine to process change event
-        })
 
-        // check the order of associated product names in the summary matches the expected names
-        cy.get('#bundleSummary .bundle.items li > span').each((actual, idx) => {
-            expect(actual.text()).to.eq(expectedNames[idx]);
-        })
-
-        // check the associated product qty in the summary is 1, 2, 3...
-        cy.get('#bundleSummary .bundle.items li > div > span:first-child').each((actualQty, idx) => {
-            expect(actualQty.text()).to.eq(`${idx + 1}`);
-        })
-    })
     it('Can add a bundled product to the cart', () => {
-        cy.get('input[id$=-qty-input]').each(input => {
-            cy.wrap(input).type('{selectall}1').blur();
-            cy.wait(0); // wait for alpine to process change event
-        })
-        cy.get(selectors.addToCartButton).click();
-        cy.get(homepageSelectors.successMessage).contains(
-            `You added ${product.bundledProductName} to your shopping cart.`
-        );
-        cy.get(selectors.cartIconProductCount).invoke('text').should('not.eq', '') // wait for product count to update
-        cy.get(selectors.cartIconProductCount).invoke('text').then(parseFloat).should('be.gte', 1);
+        setBundleOptionQuantities(1)
+
+        cy.get(selectors.addToCartButton).click()
+
+        cy.get(homepageSelectors.successMessage)
+            .should('contain.text', `You added ${product.bundledProductName} to your shopping cart.`)
+
+        cy.get(selectors.cartIconProductCount)
+            .should('not.be.empty')
+            .invoke('text')
+            .then(parseFloat)
+            .should('be.gte', 1)
     })
 })

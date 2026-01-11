@@ -25,5 +25,13 @@
     "reviewReviewField": "#review_field",
     "reviewSubmitButton": "#review_form button",
     "reviewSubmittedSuccessMessage": "#review_form > div > div > p",
-    "reviewSummeryField": "#summary_field"
+    "reviewSummeryField": "#summary_field",
+
+    "bundleOptionControls": ".product-info-main fieldset .control",
+    "bundleOptionPriceWrapper": ".price-wrapper",
+    "bundleOptionQtyInputs": "input[id$=-qty-input]",
+    "bundleOptionLabels": ".product-info-main fieldset > div > label",
+    "bundleSummaryFinalPrice": "#bundleSummary .final-price .price",
+    "bundleSummaryItemNames": "#bundleSummary .bundle.items li > span",
+    "bundleSummaryItemQtys": "#bundleSummary .bundle.items li > div > span:first-child"
 }
