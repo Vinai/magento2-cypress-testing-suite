@@ -56,7 +56,6 @@ export class Account {
         cy.get(selectors.newPasswordConfirmationInputSelector).type(
             `${passwd}{enter}`
         );
-        slee
     }
 
     static logout() {
